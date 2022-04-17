@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Http;
 
 class OrcaWebHookController extends Controller
 {
-    public function webhook_out(Request $request){
+    public function webhook_out(Request $request)
+    {
         $json = $request->getContent(); //json as a string.
         $data = json_decode($json, true);
 
@@ -41,7 +42,7 @@ class OrcaWebHookController extends Controller
         return 'ok';
     }
 
-    public function webhook_in()
+    public static function webhook_in()
     {
         // The following example adds a new row to a sheet, setting the value of Barcode, Name, Quantity and Description
         $response = Http::post('https://httpbin.org/post', [  // TODO: change url to https://api.orcascan.com/sheets/{id}
@@ -53,5 +54,11 @@ class OrcaWebHookController extends Controller
         ]);
         
         echo $response->getBody();
+    }
+
+    public function trigger_webhook_in(Request $request)
+    {
+        $this->webhook_in();
+        return 'ok';
     }
 }

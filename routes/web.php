@@ -18,4 +18,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::post('/orca-webhook',  [OrcaWebHookController::class, 'webhook_out']);
+Route::post('/orca-webhook-out',  [OrcaWebHookController::class, 'webhook_out']);
+Route::get('/trigger-webhook-in',  [OrcaWebHookController::class, 'trigger_webhook_in']);
