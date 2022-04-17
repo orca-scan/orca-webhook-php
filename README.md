@@ -47,7 +47,7 @@ curl --location --request POST 'http://127.0.0.1:80/orca-webhook-out' \
 
 ## Example
 
-This [example]() uses the [Laravel](https://laravel.com/) framework:
+This [example](app/Http/Controllers/OrcaWebHookController.php) uses the [Laravel](https://laravel.com/) framework:
 
 ### WebHook Out 
 
