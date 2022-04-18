@@ -1,18 +1,10 @@
 <?php
+//WebHook Out Controller
+if (preg_match('/orca-webhook-out$/', $_SERVER["REQUEST_URI"])){
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $data = json_decode(file_get_contents('php://input'), true);
 
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-
-class OrcaWebHookController extends Controller
-{
-    public function webhook_out(Request $request)
-    {
-        $json = $request->getContent(); //json as a string.
-        $data = json_decode($json, true);
-
-        // get the name of the action that triggered this request (add, update, delete, test)
+         // get the name of the action that triggered this request (add, update, delete, test)
         $action = $data["___orca_action"];
 
         // get the name of the sheet this action impacts
@@ -41,24 +33,35 @@ class OrcaWebHookController extends Controller
         }
         return 'ok';
     }
-
-    public static function webhook_in()
-    {
+}
+//WebHook In Controller
+elseif (preg_match('/trigger-webhook-in$/', $_SERVER["REQUEST_URI"])){
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // The following example adds a new row to a sheet, setting the value of Barcode, Name, Quantity and Description
-        $response = Http::post('https://httpbin.org/post', [  // TODO: change url to https://api.orcascan.com/sheets/{id}
+        // TODO: change url to https://api.orcascan.com/sheets/{id}
+        $url = 'https://httpbin.org/post';
+        $data = array(
             "___orca_action" => "update",
-            "Barcode" => "0123456789",
+            "barcode" => "0123456789",
             "Name" => "New 1",
             "Quantity" => 12,
             "Description" => "Add new row example"
-        ]);
-        
-        echo $response->getBody();
-    }
-
-    public function trigger_webhook_in(Request $request)
-    {
-        $this->webhook_in();
-        return 'ok';
+        );
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen(json_encode($data))
+        ));
+        $response = curl_exec($ch);
+        curl_close($ch);
+        echo $response;
     }
 }
+else {
+    echo "<p>Welcome to Orca Example.</p>";
+}
+
+?>
