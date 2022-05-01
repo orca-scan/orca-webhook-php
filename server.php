@@ -38,8 +38,6 @@ if (preg_match('/orca-webhook-out$/', $_SERVER["REQUEST_URI"])){
 elseif (preg_match('/trigger-webhook-in$/', $_SERVER["REQUEST_URI"])){
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // The following example adds a new row to a sheet, setting the value of Barcode, Name, Quantity and Description
-        // TODO: change url to https://api.orcascan.com/sheets/{id}
-        $url = 'https://httpbin.org/post';
         $data = array(
             "___orca_action" => "update",
             "barcode" => "0123456789",
@@ -47,6 +45,9 @@ elseif (preg_match('/trigger-webhook-in$/', $_SERVER["REQUEST_URI"])){
             "Quantity" => 12,
             "Description" => "Add new row example"
         );
+        // TODO: change url to https://api.orcascan.com/sheets/{id}
+        $url = 'https://httpbin.org/post';
+
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));

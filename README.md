@@ -106,27 +106,32 @@ if (preg_match('/orca-webhook-out$/', $_SERVER["REQUEST_URI"])){
 [Orca Scan WebHook In](https://orcascan.com/guides/how-to-update-orca-scan-from-your-system-4b249706)
 
 ```php
-// The following example adds a new row to a sheet, setting the value of Barcode, Name, Quantity and Description
-// TODO: change url to https://api.orcascan.com/sheets/{id}
-$url = 'https://api.orcascan.com/sheets/_2e4ypWgXBIkidoi';
-$data = array(
-    "___orca_action" => "update",
-    "barcode" => "0123456789",
-    "Name" => "New 1",
-    "Quantity" => 12,
-    "Description" => "Add new row example"
-);
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    'Content-Type: application/json',
-    'Content-Length: ' . strlen(json_encode($data))
-));
-$response = curl_exec($ch);
-curl_close($ch);
-echo $response;
+if (preg_match('/trigger-webhook-in$/', $_SERVER["REQUEST_URI"])){
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        // The following example adds a new row to a sheet, setting the value of Barcode, Name, Quantity and Description
+        $data = array(
+            "___orca_action" => "update",
+            "barcode" => "0123456789",
+            "Name" => "New 1",
+            "Quantity" => 12,
+            "Description" => "Add new row example"
+        );
+        // TODO: change url to https://api.orcascan.com/sheets/{id}
+        $url = 'https://httpbin.org/post';
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen(json_encode($data))
+        ));
+        $response = curl_exec($ch);
+        curl_close($ch);
+        echo $response;
+    }
+}
 ```
 
 Use `http://127.0.0.1:8000/trigger-webhook-in` to trigget the in webhook and send the request.
