@@ -23,7 +23,7 @@ cd orca-webhook-php
 ## Run
 
 ```bash
-# build a Docker image
+# Start the server
 php -S 127.0.0.1:8000 server.php
 ```
 
@@ -134,7 +134,7 @@ if (preg_match('/trigger-webhook-in$/', $_SERVER["REQUEST_URI"])){
 }
 ```
 
-Use `http://127.0.0.1:8000/trigger-webhook-in` to trigget the in webhook and send the request.
+Use `http://127.0.0.1:8000/trigger-webhook-in` to trigger the in webhook and send the request.
 
 ## Test server locally against Orca Cloud
 
@@ -145,6 +145,29 @@ ngrok http 8000
 ```
 
 ## Troubleshooting
+
+If you get the following error message when you try to trigger webhook in:
+
+**Uncaught Error: Call to undefined function curl_init()**
+
+It may be that the `php_curl.dll` is not being loaded and you need to specify it in the `php.ini` file. Read the following Stack Overflow question to find out how to fix this:
+
+https://stackoverflow.com/questions/6382539/call-to-undefined-function-curl-init
+
+Also, type the following line to determine if the `php.ini` file is being loaded:
+
+```bash
+php --ini
+```
+
+If no configuration file is being loaded, enter the following:
+
+```bash
+export PHPRC='<path to php.ini>'
+php --ini
+```
+
+If you subsequently get the message "PHP Warning:  PHP Startup: Unable to load dynamic library 'curl'" after running `php --ini`, you may need to edit your `php.ini` file and uncomment the `extension_dir` line.
 
 If you run into any issues not listed here, please [open a ticket](https://github.com/orca-scan/orca-webhook-python/issues).
 
