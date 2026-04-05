@@ -1,41 +1,43 @@
 # orca-webhook-php
 
-Example of how to build an [Orca Scan WebHook Out](https://orcascan.com/docs/api/webhooks) endpoint and [Orca Scan WebHook In](https://orcascan.com/guides/how-to-update-orca-scan-from-your-system-4b249706) using [Php](https://www.php.net).
+Connect [Orca Scan](https://orcascan.com) to your own system using webhooks. When a user scans a barcode and adds, updates, or deletes a row, Orca Scan sends the data to your server in real-time - no polling, no manual exports.
 
-## Install
+This PHP example shows you how to:
 
-First ensure you have [Php](https://www.php.net/manual/en/install.php) installed.
-```bash
-# should return 7.1 or higher
-php -v
-```
+- **Receive scan data** from Orca Scan as it happens ([Webhook Out](https://orcascan.com/guides/updating-your-system-data-when-a-barcode-is-scanned-da8bbe42))
+- **Push data back** into Orca Scan from your own system ([Webhook In](https://orcascan.com/guides/updating-orca-scan-data-from-your-system-4b249706))
 
-Then execute the following:
+## Quick start
 
 ```bash
-# download this example code
 git clone https://github.com/orca-scan/orca-webhook-php.git
-
-# go into the new directory
 cd orca-webhook-php
+php -S 127.0.0.1:8888 server.php
 ```
 
-## Run
+Server runs on port **8888**.
+
+## Receiving data from Orca Scan (Webhook Out)
+
+When a barcode is scanned and a row changes, Orca Scan sends a `POST` request to `/orca-webhook-out` with the row data as JSON. You can use this to sync inventory to your database, trigger alerts, update dashboards — whatever your workflow needs.
+
+Every request includes these system fields:
+
+| Field | Description |
+|---|---|
+| `___orca_event` | `rows:add`, `rows:update`, `rows:delete`, or `test` |
+| `___orca_sheet_name` | The sheet that triggered the event |
+| `___orca_user_email` | Email of the user _(HTTPS only)_ |
+
+All other fields match your sheet column names exactly _(case and space sensitive)_.
+
+### Test with cURL
 
 ```bash
-# Start the server
-php -S 127.0.0.1:8000 server.php
-```
-
-Your WebHook receiver will now be running on port 8000.
-
-You can emulate an Orca Scan WebHook using [cURL](https://dev.to/ibmdeveloper/what-is-curl-and-why-is-it-all-over-api-docs-9mh) by running the following:
-
-```bash
-curl --location --request POST 'http://127.0.0.1:8000/orca-webhook-out' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "___orca_action": "add",
+curl -X POST 'http://127.0.0.1:8888/orca-webhook-out' \
+-H 'Content-Type: application/json' \
+-d '{
+    "___orca_event": "rows:add",
     "___orca_sheet_name": "Vehicle Checks",
     "___orca_user_email": "hidden@requires.https",
     "___orca_row_id": "5cf5c1efc66a9681047a0f3d",
@@ -50,138 +52,44 @@ curl --location --request POST 'http://127.0.0.1:8000/orca-webhook-out' \
     "Notes": "Needs new tires"
 }'
 ```
-### Important things to note
 
-1. Only Orca Scan system fields start with `___`
-2. Properties in the JSON payload are an exact match to the  field names in your sheet _(case and space)_
-3. WebHooks are never retried, regardless of the HTTP response
+### Test with Orca Scan
 
-## Example
-
-This [example](app/Http/Controllers/OrcaWebHookController.php) uses the [Laravel](https://laravel.com/) framework:
-
-### WebHook Out 
-
-[Orca Scan WebHook Out](https://orcascan.com/docs/api/webhooks)
-
-```php
-if (preg_match('/orca-webhook-out$/', $_SERVER["REQUEST_URI"])){
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $data = json_decode(file_get_contents('php://input'), true);
-
-         // get the name of the action that triggered this request (add, update, delete, test)
-        $action = $data["___orca_action"];
-
-        // get the name of the sheet this action impacts
-        $sheetName = $data["___orca_sheet_name"];
-
-        // get the email of the user who preformed the action (empty if not HTTPS)
-        $userEmail = $data["___orca_user_email"];
-
-        // NOTE:
-        // orca system fields start with ___
-        // you can access the value of each field using the field name (data.Name, data.Barcode, data.Location)
-        switch ($action) {
-            case "add":
-                // TODO: do something when a row has been added
-                break;
-            case "update":
-                
-                // TODO: do something when a row has been updated
-                break;
-            case "delete":
-                // TODO: do something when a row has been deleted
-                break;
-            case "test":
-                // TODO: do something when the user in the web app hits the test button
-                break;
-        }
-        return 'ok';
-    }
-}
-```
-
-### WebHook In 
-
-[Orca Scan WebHook In](https://orcascan.com/guides/how-to-update-orca-scan-from-your-system-4b249706)
-
-```php
-if (preg_match('/trigger-webhook-in$/', $_SERVER["REQUEST_URI"])){
-    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        // The following example adds a new row to a sheet, setting the value of Barcode, Name, Quantity and Description
-        $data = array(
-            "___orca_action" => "update",
-            "barcode" => "0123456789",
-            "Name" => "New 1",
-            "Quantity" => 12,
-            "Description" => "Add new row example"
-        );
-        // TODO: change url to https://api.orcascan.com/sheets/{id}
-        $url = 'https://httpbin.org/post';
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json',
-            'Content-Length: ' . strlen(json_encode($data))
-        ));
-        $response = curl_exec($ch);
-        curl_close($ch);
-        echo $response;
-    }
-}
-```
-
-Use `http://127.0.0.1:8000/trigger-webhook-in` to trigger the in webhook and send the request.
-
-## Test server locally against Orca Cloud
-
-To expose the server securely from localhost and test it easily against the real Orca Cloud environment you can use [Secure Tunnels](https://ngrok.com/docs/secure-tunnels#what-are-ngrok-secure-tunnels). Take a look at [Ngrok](https://ngrok.com/) or [Cloudflare](https://www.cloudflare.com/).
+Expose your local server with [localtunnel](https://github.com/localtunnel/localtunnel):
 
 ```bash
-ngrok http 8000
+npx localtunnel --port 8888
 ```
 
-## Troubleshooting
+Then [add the tunnel URL as your Webhook Out endpoint](https://orcascan.com/guides/capture-barcode-scan-events-with-webhooks-da8bbe42#how-to-set-up-a-webhook-out-url) in the Orca Scan web app and hit **Test**.
 
-If you get the following error message when you try to trigger webhook in:
+> Webhooks are fire-and-forget — they are not retried regardless of HTTP response.
 
-**Uncaught Error: Call to undefined function curl_init()**
+## Pushing data into Orca Scan (Webhook In)
 
-It may be that the `php_curl.dll` is not being loaded and you need to specify it in the `php.ini` file. Read the following Stack Overflow question to find out how to fix this:
+Need to update Orca Scan from your own system? Hit `GET /trigger-webhook-in` to push a row into a sheet via the [Webhook In API](https://orcascan.com/guides/updating-orca-scan-data-from-your-system-4b249706).
 
-https://stackoverflow.com/questions/6382539/call-to-undefined-function-curl-init
+To connect it to your sheet, update the URL in [server.php](server.php):
 
-Also, type the following line to determine if the `php.ini` file is being loaded:
-
-```bash
-php --ini
+```
+https://api.orcascan.com/sheets/{id}
 ```
 
-If no configuration file is being loaded, enter the following:
+See the [REST API docs](https://orcascan.com/guides/barcode-scanning-rest-api-f09a21c3) for all available endpoints.
 
-```bash
-export PHPRC='<path to php.ini>'
-php --ini
-```
+## Examples in other languages
 
-If you subsequently get the message "PHP Warning:  PHP Startup: Unable to load dynamic library 'curl'" after running `php --ini`, you may need to edit your `php.ini` file and uncomment the `extension_dir` line.
+| Language | Repository |
+|---|---|
+| Node.js | [orca-webhook-node](https://github.com/orca-scan/orca-webhook-node) |
+| Python | [orca-webhook-python](https://github.com/orca-scan/orca-webhook-python) |
+| Go | [orca-webhook-go](https://github.com/orca-scan/orca-webhook-go) |
+| Java | [orca-webhook-java](https://github.com/orca-scan/orca-webhook-java) |
+| C# | [orca-webhook-dotnet](https://github.com/orca-scan/orca-webhook-dotnet) |
 
-If you run into any issues not listed here, please [open a ticket](https://github.com/orca-scan/orca-webhook-python/issues).
+## Help
 
-## Examples in other langauges
-* [orca-webhook-dotnet](https://github.com/orca-scan/orca-webhook-dotnet)
-* [orca-webhook-python](https://github.com/orca-scan/orca-webhook-python)
-* [orca-webhook-go](https://github.com/orca-scan/orca-webhook-go)
-* [orca-webhook-java](https://github.com/orca-scan/orca-webhook-java)
-* [orca-webhook-php](https://github.com/orca-scan/orca-webhook-php)
-* [orca-webhook-node](https://github.com/orca-scan/orca-webhook-node)
-
-## History
-
-For change-log, check [releases](https://github.com/orca-scan/orca-webhook-python/releases).
+[Chat to us live](https://orcascan.com/#chat) if you run into any issues.
 
 ## License
 
